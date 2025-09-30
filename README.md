@@ -16,6 +16,7 @@ It lets you visualize how players connect with each other on the pitch, filter b
 ---
 
 ## 📸 Demo
-*(Add a screenshot)*
+<img width="2374" height="1610" alt="image" src="https://github.com/user-attachments/assets/d25fd9a4-8ddf-4026-a0e3-4e0902331011" />
+
 
 ---
