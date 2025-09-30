@@ -11,7 +11,7 @@ It lets you visualize how players connect with each other on the pitch, filter b
 - Visualizes:
   - Average player positions.  
   - Passing connections (arrows scaled by number of completed passes).  
-- Interactive **time filter buttons** (10, 20, 30, 45, 60, 75, Full) to see how the network evolves throughout a match.  
+- Interactive **time filter buttons**: 10, 20, 30, 45, 60, 75, 90, and Full (If the game went into extra time) to see how the network evolves throughout a match.  
 
 ---
 
