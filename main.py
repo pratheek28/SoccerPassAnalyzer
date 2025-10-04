@@ -4,6 +4,7 @@ import requests
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, RadioButtons, CheckButtons
 import networkx as nx
+import time as pytime
 
 #UCL 2010/2011 Final
 url = "https://raw.githubusercontent.com/statsbomb/open-data/refs/heads/master/data/events/18236.json"
@@ -13,12 +14,6 @@ url = "https://raw.githubusercontent.com/statsbomb/open-data/refs/heads/master/d
 
 
 events = requests.get(url).json()
-
-
-def buttonClick(value):
-    plt.close()
-    showPassNetwork(value)
-    
 
 def drawPitch(ax=None):
     if ax is None:
@@ -50,7 +45,7 @@ def drawPitch(ax=None):
 
 
 
-def showPassNetwork(time):
+
     passes = []
     for event in events:
         if event['type']['name'] == 'Pass' and event['team']['name'] == 'Barcelona' and event['minute'] <= time:
@@ -139,10 +134,92 @@ def showPassNetwork(time):
 
     plt.show()
 
+def replayMatch():
+    fig, ax = plt.subplots(figsize=(12, 8))
+    for minute in range(1, 91):   # simulate 90 minutes
+        ax.clear()                # clear the pitch
+        drawPitch(ax)             # redraw pitch lines
+
+        # Filter passes up to current minute
+        passes = []
+        for event in events:
+            if (event['type']['name'] == 'Pass' and 
+                event['team']['name'] == 'Barcelona' and 
+                event['minute'] <= minute):
+                passes.append({
+                    'player': event['player']['name'],
+                    'receiver': event['pass']['recipient']['name'] if event['pass'].get('recipient') else None,
+                    'team': event['team']['name'],
+                    'minute': event['minute'],
+                    "x_start": event["location"][0],
+                    "y_start": event["location"][1],
+                    "x_end": event["pass"]["end_location"][0],
+                    "y_end": event["pass"]["end_location"][1],
+                    'outcome': event['pass']['outcome']['name'] if event['pass'].get('outcome') else 'Complete'
+                })
+
+        df_passes = pd.DataFrame(passes)
+
+        # Adjust y-coordinates to match pitch orientation with player positions
+        df_passes['y_start'] = 80 - df_passes['y_start']
+        df_passes['y_end'] = 80 - df_passes['y_end']
+        
+
+        # Average positions
+        avgPosition = df_passes.groupby('player').agg({
+            'x_start': 'mean',
+            'y_start': 'mean'
+        })
+
+        passCounts = df_passes[df_passes['outcome'] == 'Complete'].groupby('player').size()
+        if not passCounts.empty:
+            topPasser = passCounts.idxmax()
+            topCount = passCounts.max()
+        else:
+            topPasser = None
+            topCount = 0
+        
+        ax.text(
+            60, -5,
+            f'Top Passer: {topPasser} ({topCount} passes)' if topPasser else 'No passes yet',
+            fontsize=12, ha='center', va='center',
+            bbox=dict(facecolor='white', alpha=0.8, edgecolor='black')
+        )
+
+        # Passing graph
+        G = nx.DiGraph()
+        for _, row in df_passes.iterrows():
+            if row['outcome'] == 'Complete' and row['receiver'] is not None:
+                if G.has_edge(row['player'], row['receiver']):
+                    G[row['player']][row['receiver']]['weight'] += 1
+                else:
+                    G.add_edge(row['player'], row['receiver'], weight=1)
+
+        # Draw players
+        for player, row in avgPosition.iterrows():
+            ax.scatter(row['x_start'], row['y_start'], s=300, color='skyblue', edgecolors='black')
+            ax.text(row['x_start'], row['y_start'], player, fontsize=10, ha='center', va='center')
+
+        # Draw arrows
+        for (p1, p2, data) in G.edges(data=True):
+            if p1 in avgPosition.index and p2 in avgPosition.index:
+                x1, y1 = avgPosition.loc[p1]
+                x2, y2 = avgPosition.loc[p2]
+                ax.annotate("",
+                    xy=(x2, y2), xycoords="data",
+                    xytext=(x1, y1), textcoords="data",
+                    arrowprops=dict(arrowstyle="->", lw=data["weight"]*0.3, color="gray")
+                )
+
+        # Add a title with current minute
+        ax.set_title(f"Barcelona Passing Network – Minute {minute}", fontsize=14)
+
+        plt.pause(0.5)   # short delay before updating
+        pytime.sleep(0.1)  # simulate "time passing"
+    plt.show()
 
 def main():
-    showPassNetwork(120)
+    replayMatch()
     
-
 if __name__ == "__main__":
     main()
