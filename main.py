@@ -219,7 +219,6 @@ def replayMatch():
     plt.show()
 
 def main():
-    print("Test")
     replayMatch()
     
 if __name__ == "__main__":
